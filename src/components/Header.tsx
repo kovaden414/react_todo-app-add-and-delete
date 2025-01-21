@@ -1,20 +1,23 @@
 import classNames from 'classnames';
 import { Todo } from '../types/Todo';
+import { RefObject } from 'react';
 
 type Props = {
   todos: Todo[];
-  // handleToggleAllButton: () => void;
   handleSubmitButton: (event: React.FormEvent) => void;
   title: string;
   setTitle: (title: string) => void;
+  isSubmitting: boolean;
+  titleField: RefObject<HTMLInputElement>;
 };
 
 export const Header: React.FC<Props> = ({
   todos,
-  // handleToggleAllButton,
   handleSubmitButton,
   title,
   setTitle,
+  isSubmitting,
+  titleField,
 }) => (
   <>
     {/* this button should have `active` class only if all todos are completed */}
@@ -24,7 +27,6 @@ export const Header: React.FC<Props> = ({
         active: !todos.find(todo => !todo.completed),
       })}
       data-cy="ToggleAllButton"
-      // onClick={handleToggleAllButton}
     />
 
     {/* Add a todo on form submit */}
@@ -34,7 +36,8 @@ export const Header: React.FC<Props> = ({
         type="text"
         className="todoapp__new-todo"
         placeholder="What needs to be done?"
-        autoFocus
+        ref={titleField}
+        disabled={isSubmitting}
         value={title}
         onChange={event => {
           setTitle(event.target.value);

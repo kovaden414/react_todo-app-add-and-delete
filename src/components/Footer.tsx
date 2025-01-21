@@ -1,7 +1,9 @@
 import classNames from 'classnames';
-import { TodoType } from '../App';
+import { TodoType } from '../enums/TodoType';
+import { Todo } from '../types/Todo';
 
 type Props = {
+  todos: Todo[];
   completedTodosCount: number;
   todosType: TodoType;
   setTodosType: (todosType: TodoType) => void;
@@ -13,10 +15,11 @@ export const Footer: React.FC<Props> = ({
   todosType,
   setTodosType,
   clearCompletedTodo,
+  todos,
 }) => (
   <>
     <span className="todo-count" data-cy="TodosCounter">
-      {completedTodosCount} items left
+      {todos.length - completedTodosCount} items left
     </span>
 
     {/* Active link should have the 'selected' class */}
@@ -44,6 +47,7 @@ export const Footer: React.FC<Props> = ({
       className="todoapp__clear-completed"
       data-cy="ClearCompletedButton"
       onClick={clearCompletedTodo}
+      disabled={completedTodosCount === 0}
     >
       Clear completed
     </button>

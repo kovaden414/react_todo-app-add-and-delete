@@ -6,24 +6,14 @@ import { Todo } from '../types/Todo';
 type Props = {
   todo: Todo;
   completeTodo: (todoId: number) => void;
-  // changingTodo: Todo | undefined;
-  // setChangingTodo: (tochangingTododoId: Todo | undefined) => void;
-  // changedTitle: string;
-  // setChangedTitle: (changedTitle: string) => void;
   deleteTodo: (todoId: number) => void;
-  // handleTitleChange: (event: React.FormEvent, updatedTodo: Todo) => void;
   loadingTodos: Todo[] | null;
 };
 
 export const TodoInfo: React.FC<Props> = ({
   todo,
   completeTodo,
-  // changingTodo,
-  // setChangingTodo,
-  // changedTitle,
-  // setChangedTitle,
   deleteTodo,
-  // handleTitleChange,
   loadingTodos,
 }) => (
   <>
@@ -44,16 +34,8 @@ export const TodoInfo: React.FC<Props> = ({
         />
       </label>
 
-      {/* {changingTodo?.id !== todo.id && ( */}
       <>
-        <span
-          data-cy="TodoTitle"
-          className="todo__title"
-          // onDoubleClick={() => {
-          //   setChangingTodo(todo);
-          //   setChangedTitle(todo.title);
-          // }}
-        >
+        <span data-cy="TodoTitle" className="todo__title">
           {todo.title}
         </span>
 
@@ -66,23 +48,6 @@ export const TodoInfo: React.FC<Props> = ({
           ×
         </button>
       </>
-      {/* )} */}
-
-      {/* {changingTodo?.id === todo.id && (
-        <form onSubmit={event => handleTitleChange(event, todo)}>
-          <input
-            data-cy="TodoTitleField"
-            type="text"
-            className="todo__title-field"
-            placeholder="Empty todo will be deleted"
-            autoFocus
-            value={changedTitle}
-            onChange={event => {
-              setChangedTitle(event.target.value);
-            }}
-          />
-        </form>
-      )} */}
 
       <div
         data-cy="TodoLoader"

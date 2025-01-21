@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { UserWarning } from './UserWarning';
 import * as todoServise from './api/todos';
 import { Todo } from './types/Todo';
@@ -7,12 +7,7 @@ import { TodoList } from './components/TodoList';
 import { Footer } from './components/Footer';
 import classNames from 'classnames';
 import { TodoInfo } from './components/TodoInfo';
-
-export enum TodoType {
-  all = 'All',
-  active = 'Active',
-  completed = 'Completed',
-}
+import { TodoType } from './enums/TodoType';
 
 export const App: React.FC = () => {
   enum Error {
@@ -24,23 +19,25 @@ export const App: React.FC = () => {
   }
 
   const [title, setTitle] = useState('');
-  // const [changedTitle, setChangedTitle] = useState('');
   const [todos, setTodos] = useState<Todo[]>([]);
   const [tempTodo, setTempTodo] = useState<Todo | null>(null);
   const [loadingTodos, setLoadingTodos] = useState<Todo[] | null>([]);
   const [todosType, setTodosType] = useState<TodoType>(TodoType.all);
-  // const [isAllTodoCompleted, setIsAllTodoCompleted] = useState(false);
   const [completedTodosCount, setCompletedTodosCount] = useState(0);
-  // const [changingTodo, setChangingTodo] = useState<Todo | undefined>(undefined);
   const [errorMessage, setErrorMessage] = useState<Error | undefined>(
     undefined,
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverTodosCount, setServerTodosCount] = useState(0);
+  const titleField = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     todoServise
       .getTodos()
-      .then(setTodos)
+      .then(fetchedTodos => {
+        setTodos(fetchedTodos);
+        setServerTodosCount(fetchedTodos.length);
+      })
       .catch(() => {
         setErrorMessage(Error.loadError);
         setTimeout(() => {
@@ -51,26 +48,14 @@ export const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    todoServise.getTodos().then(fetchedTodos => {
-      switch (todosType) {
-        case TodoType.active:
-          setTodos(fetchedTodos.filter(todo => !todo.completed));
-          break;
-        case TodoType.completed:
-          setTodos(fetchedTodos.filter(todo => todo.completed));
-          break;
-        case TodoType.all:
-        default:
-          setTodos(fetchedTodos);
-      }
+    setCompletedTodosCount(todos.filter(todo => todo.completed).length);
+  }, [todos]);
 
-      setServerTodosCount(fetchedTodos.length);
-    });
-
-    setCompletedTodosCount(
-      todos.length - todos.filter(todo => todo.completed).length,
-    );
-  }, [todos, todosType]);
+  useEffect(() => {
+    if (titleField.current) {
+      titleField.current.focus();
+    }
+  }, [todos, errorMessage]);
 
   if (!todoServise.USER_ID) {
     return <UserWarning />;
@@ -79,11 +64,16 @@ export const App: React.FC = () => {
   const handleSubmitButton = (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (title.trim() === '') {
-      return setErrorMessage(Error.titleError);
-    }
-
     setErrorMessage(undefined);
+
+    if (title.trim() === '') {
+      setErrorMessage(Error.titleError);
+      setTimeout(() => {
+        setErrorMessage(undefined);
+      }, 3000);
+
+      return;
+    }
 
     setTempTodo({
       title: title,
@@ -101,23 +91,31 @@ export const App: React.FC = () => {
 
     setTempTodo(newTempTodo);
     setLoadingTodos([newTempTodo]);
+    setIsSubmitting(true);
 
     todoServise
-      .addTodos({ title, completed: false, userId: todoServise.USER_ID })
+      .addTodos({
+        title: title.trim(),
+        completed: false,
+        userId: todoServise.USER_ID,
+      })
       .then(newTodo => {
         setTodos(currentTodos => [...currentTodos, newTodo]);
+        setTitle('');
+        setServerTodosCount(currentCount => currentCount + 1);
       })
       .catch(error => {
         setErrorMessage(Error.addError);
         setTimeout(() => {
           setErrorMessage(undefined);
         }, 3000);
+
         throw error;
       })
       .finally(() => {
-        setTitle('');
         setTempTodo(null);
         setLoadingTodos(null);
+        setIsSubmitting(false);
       });
   };
 
@@ -153,36 +151,6 @@ export const App: React.FC = () => {
     }
   };
 
-  // const handleToggleAllButton = () => {
-  //   setIsAllTodoCompleted(!isAllTodoCompleted);
-
-  //   const updatedTodos = todos.map(todo => ({
-  //     ...todo,
-  //     completed: isAllTodoCompleted,
-  //   }));
-
-  //   setLoadingTodos(
-  //     todos.filter(todo => todo.completed !== isAllTodoCompleted),
-  //   );
-
-  //   updatedTodos.forEach(todo => {
-  //     todoServise
-  //       .updateTodos(todo)
-  //       .then(() => {
-  //         setTodos(updatedTodos);
-  //       })
-  //       .catch(() => {
-  //         setErrorMessage(Error.updateError);
-  //         setTimeout(() => {
-  //           setErrorMessage(undefined);
-  //         }, 3000);
-  //       })
-  //       .finally(() => {
-  //         setLoadingTodos(null);
-  //       });
-  //   });
-  // };
-
   const deleteTodo = (todoId: number) => {
     setLoadingTodos(todos.filter(todo => todo.id === todoId));
     todoServise
@@ -191,6 +159,7 @@ export const App: React.FC = () => {
         setTodos(currentTodos =>
           currentTodos.filter(todo => todo.id !== todoId),
         );
+        setServerTodosCount(currentCount => currentCount - 1);
       })
       .catch(() => {
         setErrorMessage(Error.deleteError);
@@ -205,6 +174,8 @@ export const App: React.FC = () => {
 
   const clearCompletedTodo = () => {
     const completedTodos = todos.filter(todo => todo.completed);
+
+    setServerTodosCount(currentCount => currentCount - completedTodos.length);
 
     setLoadingTodos(completedTodos);
 
@@ -228,36 +199,6 @@ export const App: React.FC = () => {
     });
   };
 
-  // const handleTitleChange = (event: React.FormEvent, updatedTodo: Todo) => {
-  //   event.preventDefault();
-
-  //   if (changedTitle.trim() === '') {
-  //     return setErrorMessage(Error.titleError);
-  //   }
-
-  //   setErrorMessage(undefined);
-
-  //   const updatedTodoWithNewTitle = { ...updatedTodo, title: changedTitle };
-
-  //   setLoadingTodos([updatedTodoWithNewTitle]);
-
-  //   todoServise
-  //     .updateTodos(updatedTodoWithNewTitle)
-  //     .then(() => {
-  //       setTodos(currentTodos =>
-  //         currentTodos.map(todo =>
-  //           todo.id === updatedTodo.id ? updatedTodoWithNewTitle : todo,
-  //         ),
-  //       );
-  //       setChangingTodo(undefined);
-  //       setChangedTitle('');
-  //     })
-  //     .catch(() => setErrorMessage(Error.updateError))
-  //     .finally(() => {
-  //       setLoadingTodos(null);
-  //     });
-  // };
-
   return (
     <div className="todoapp">
       <h1 className="todoapp__title">todos</h1>
@@ -266,23 +207,29 @@ export const App: React.FC = () => {
         <header className="todoapp__header">
           <Header
             todos={todos}
-            // handleToggleAllButton={handleToggleAllButton}
             handleSubmitButton={handleSubmitButton}
             title={title}
             setTitle={setTitle}
+            isSubmitting={isSubmitting}
+            titleField={titleField}
           />
         </header>
 
         <section className="todoapp__main" data-cy="TodoList">
           <TodoList
-            todos={todos}
+            todos={todos.filter(todo => {
+              switch (todosType) {
+                case TodoType.active:
+                  return !todo.completed;
+                case TodoType.completed:
+                  return todo.completed;
+                case TodoType.all:
+                default:
+                  return true;
+              }
+            })}
             completeTodo={completeTodo}
-            // changingTodo={changingTodo}
-            // setChangingTodo={setChangingTodo}
-            // changedTitle={changedTitle}
-            // setChangedTitle={setChangedTitle}
             deleteTodo={deleteTodo}
-            // handleTitleChange={handleTitleChange}
             loadingTodos={loadingTodos}
           />
 
@@ -290,12 +237,7 @@ export const App: React.FC = () => {
             <TodoInfo
               todo={tempTodo}
               completeTodo={completeTodo}
-              // changingTodo={changingTodo}
-              // setChangingTodo={setChangingTodo}
-              // changedTitle={changedTitle}
-              // setChangedTitle={setChangedTitle}
               deleteTodo={deleteTodo}
-              // handleTitleChange={handleTitleChange}
               loadingTodos={loadingTodos}
             />
           )}
@@ -305,6 +247,7 @@ export const App: React.FC = () => {
         {serverTodosCount > 0 && (
           <footer className="todoapp__footer" data-cy="Footer">
             <Footer
+              todos={todos}
               completedTodosCount={completedTodosCount}
               todosType={todosType}
               setTodosType={setTodosType}
