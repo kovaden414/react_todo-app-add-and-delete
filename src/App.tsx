@@ -8,25 +8,16 @@ import { Footer } from './components/Footer';
 import classNames from 'classnames';
 import { TodoInfo } from './components/TodoInfo';
 import { TodoType } from './enums/TodoType';
+import { Error } from './enums/Error';
 
 export const App: React.FC = () => {
-  enum Error {
-    loadError = 'Unable to load todos',
-    titleError = 'Title should not be empty',
-    addError = 'Unable to add a todo',
-    deleteError = 'Unable to delete a todo',
-    updateError = 'Unable to update a todo',
-  }
-
   const [title, setTitle] = useState('');
   const [todos, setTodos] = useState<Todo[]>([]);
   const [tempTodo, setTempTodo] = useState<Todo | null>(null);
   const [loadingTodos, setLoadingTodos] = useState<Todo[] | null>([]);
   const [todosType, setTodosType] = useState<TodoType>(TodoType.all);
   const [completedTodosCount, setCompletedTodosCount] = useState(0);
-  const [errorMessage, setErrorMessage] = useState<Error | undefined>(
-    undefined,
-  );
+  const [errorMessage, setErrorMessage] = useState<Error | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverTodosCount, setServerTodosCount] = useState(0);
   const titleField = useRef<HTMLInputElement>(null);
@@ -41,7 +32,7 @@ export const App: React.FC = () => {
       .catch(() => {
         setErrorMessage(Error.loadError);
         setTimeout(() => {
-          setErrorMessage(undefined);
+          setErrorMessage(null);
         }, 3000);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -64,12 +55,12 @@ export const App: React.FC = () => {
   const handleSubmitButton = (event: React.FormEvent) => {
     event.preventDefault();
 
-    setErrorMessage(undefined);
+    setErrorMessage(null);
 
     if (title.trim() === '') {
       setErrorMessage(Error.titleError);
       setTimeout(() => {
-        setErrorMessage(undefined);
+        setErrorMessage(null);
       }, 3000);
 
       return;
@@ -107,7 +98,7 @@ export const App: React.FC = () => {
       .catch(error => {
         setErrorMessage(Error.addError);
         setTimeout(() => {
-          setErrorMessage(undefined);
+          setErrorMessage(null);
         }, 3000);
 
         throw error;
@@ -142,7 +133,7 @@ export const App: React.FC = () => {
         .catch(() => {
           setErrorMessage(Error.updateError);
           setTimeout(() => {
-            setErrorMessage(undefined);
+            setErrorMessage(null);
           }, 3000);
         })
         .finally(() => {
@@ -164,7 +155,7 @@ export const App: React.FC = () => {
       .catch(() => {
         setErrorMessage(Error.deleteError);
         setTimeout(() => {
-          setErrorMessage(undefined);
+          setErrorMessage(null);
         }, 3000);
       })
       .finally(() => {
@@ -190,7 +181,7 @@ export const App: React.FC = () => {
         .catch(() => {
           setErrorMessage(Error.deleteError);
           setTimeout(() => {
-            setErrorMessage(undefined);
+            setErrorMessage(null);
           }, 3000);
         })
         .finally(() => {
@@ -272,7 +263,7 @@ export const App: React.FC = () => {
           data-cy="HideErrorButton"
           type="button"
           className="delete"
-          onClick={() => setErrorMessage(undefined)}
+          onClick={() => setErrorMessage(null)}
         />
         {/* show only one message at a time */}
         {errorMessage}

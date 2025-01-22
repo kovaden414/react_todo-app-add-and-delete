@@ -11,7 +11,7 @@ type Props = {
 };
 
 export const TodoInfo: React.FC<Props> = ({
-  todo,
+  todo: { title, completed, id },
   completeTodo,
   deleteTodo,
   loadingTodos,
@@ -20,30 +20,30 @@ export const TodoInfo: React.FC<Props> = ({
     <div
       data-cy="Todo"
       className={classNames('todo', {
-        completed: todo.completed,
+        completed: completed,
       })}
-      key={todo.id}
+      key={id}
     >
       <label className="todo__status-label">
         <input
           data-cy="TodoStatus"
           type="checkbox"
           className="todo__status"
-          checked={todo.completed}
-          onChange={() => completeTodo(todo.id)}
+          checked={completed}
+          onChange={() => completeTodo(id)}
         />
       </label>
 
       <>
         <span data-cy="TodoTitle" className="todo__title">
-          {todo.title}
+          {title}
         </span>
 
         <button
           type="button"
           className="todo__remove"
           data-cy="TodoDelete"
-          onClick={() => deleteTodo(todo.id)}
+          onClick={() => deleteTodo(id)}
         >
           ×
         </button>
@@ -52,9 +52,7 @@ export const TodoInfo: React.FC<Props> = ({
       <div
         data-cy="TodoLoader"
         className={classNames('modal overlay', {
-          'is-active': loadingTodos?.find(
-            loadingTodo => loadingTodo.id === todo.id,
-          ),
+          'is-active': loadingTodos?.find(loadingTodo => loadingTodo.id === id),
         })}
       >
         <div className="modal-background has-background-white-ter" />
